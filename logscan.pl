@@ -1803,7 +1803,7 @@ sub Process_Command_Line {
       } elsif ($arg eq '-INSTALL') { # simple installation
            print STDOUT "Installing...\n" unless &Quiet;
            $found = 0;
-           @DATA = <main::DATA> unless defined @DATA;
+           @DATA = <main::DATA> unless @DATA;
            for (@DATA) {
                if (/^__INSTALL__$/) {
                    $found = 1;
@@ -1828,7 +1828,7 @@ sub Process_Command_Line {
            exit 0;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-XL') { # list files to extract
-           @DATA = <main::DATA> unless defined @DATA;
+           @DATA = <main::DATA> unless @DATA;
            print STDOUT "Extractable files (-XT):\n";
            for (@DATA) {
                if (! m/^__EOF__$/ and m/^__([^_]\S*)__$/) {
@@ -1846,7 +1846,7 @@ sub Process_Command_Line {
            $CASE = uc($case);
            $title = "Writing $case\n";
            $found = 0;
-           @DATA = <main::DATA> unless defined @DATA;
+           @DATA = <main::DATA> unless @DATA;
            for (@DATA) {
                if (/^__${CASE}__$/) {
                    $found = 1;

@@ -22,7 +22,7 @@ STDERR->autoflush(1);
 
 use vars qw(
    $auth  $tool  $TOOL  $Tool      $vers  $offl  $revs  $revn
-   $when  $user  $date  $toolpath  $wd    $host              
+   $when  $user  $date  $toolpath  $wd    $host
 );
    $auth = 'David C Black <dcblack@hldwizard.com>';
    $tool = 'logscan'; $TOOL = uc($tool);
@@ -45,14 +45,14 @@ use vars qw(
 
 
 #############################################################################
-# 
-# ######   #####  #####   
-# #     # #     # #    #  
-# #     # #     # #     # 
-# ######  #     # #     # 
-# #       #     # #     # 
-# #       #     # #    #  
-# #        #####  #####   
+#
+# ######   #####  #####
+# #     # #     # #    #
+# #     # #     # #     #
+# ######  #     # #     #
+# #       #     # #     #
+# #       #     # #    #
+# #        #####  #####
 #
 #############################################################################
 =pod
@@ -79,7 +79,7 @@ B<logscan> -k <KIND> <I<OPTIONS>> <I<FILES-TO-SCAN>>
  -j          justify rule by displaying rule number in output
  -k <KIND>   base type of rules (Default 'default')
  -keep <N>   maximum number of logfiles to keep (default 1)
- -l <FILE>   log file for results (default $tool.log)
+ -l <FILE>   log file for results (default $tool.rpt)
  -man        output manpage to file $tool.1 and exit
  -n          no context, just message pointers
  -o <FILE>   same as -l
@@ -330,7 +330,7 @@ Most B<logscan> rules have the basic syntax of:
  RULE_TYPE CONDITION PATTERN [ACTION_OR_OPTION]
 
 Basic RULE_TYPE's are any of the keywords: 'B<fatal>', 'B<severe>',
-'B<error>', 'B<warning>', 'B<alert>', 'B<note>', and 'B<info>'. These 
+'B<error>', 'B<warning>', 'B<alert>', 'B<note>', and 'B<info>'. These
 affect the classification of an event and the return status code.
 
 Conditions are one of 'B<if>' or 'B<unless>'. The 'B<if>'
@@ -461,7 +461,7 @@ as long as they are greater than a particular one:
  error unless matches {Version (\d+\.\d+)} and {=$1 > 2.3=}
 
 Expression must be enclosed in B<{=> B<=}> and conform to Perl requirements.
-Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>, 
+Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>,
 and B<$6> are available.
 
 =head2 ALLOWANCES
@@ -474,7 +474,7 @@ but want to know if it changed when issuing an exception:
  error unless matches {WARNING at time (\d+ ns): counter cleared} allow {=$1 eq "52 ns"=}
 
 Expression must be enclosed in B<{=> B<=}> and conform to Perl requirements.
-Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>, 
+Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>,
 and B<$6> are available.
 
 =head2 CONTROLLING CONTEXTS
@@ -483,8 +483,8 @@ By using the B<enable> and B<disable> clauses, you can also turn a
 set of context controlled rules on and off. This allows you suspend
 error messages for a certain portion of the file.
 
- enable  USER_MESSAGES if contains "Start user messages" 
- disable USER_MESSAGES if contains "End user messages" 
+ enable  USER_MESSAGES if contains "Start user messages"
+ disable USER_MESSAGES if contains "End user messages"
 
 =head2 CUSTOM MESSAGES
 
@@ -634,7 +634,7 @@ with the B<unless expr> operation.
  error unless expr expr {= $my_count != 15 =} \
       msg "Discarded $my_count rather than 15 expected"
 
-Note that the B<eval> clause behaves slightly differently for B<if> vs. 
+Note that the B<eval> clause behaves slightly differently for B<if> vs.
 B<unless expr> operations. In the former, B<eval> is executed only when the
 condition is true, but for B<unless expr> the B<eval> is executed unconditionally.
 
@@ -706,9 +706,9 @@ examined both during and after.
  firstword {WORD}
  words     {WORD...WORD}
  matches   {PERL_REGULAR_EXPRESSION}
- expr      {PERL_EXPRESSION} 
+ expr      {PERL_EXPRESSION}
 
-NOTE 1: B<{}> may be replaced with any pair of (), [], <> or 
+NOTE 1: B<{}> may be replaced with any pair of (), [], <> or
 simple "", '', //.
 
 NOTE 2: TEXT or EXPRESSION may extend over multiple lines (be careful).
@@ -722,8 +722,8 @@ NOTE 4: B<expr> is only valid in conjunction with B<unless>.
  allow {=EXPR=}         allows Perl EXPR to be false, but notes it
  eval  {=EXPR=}         evaluates Perl EXPR
  and {=EXPR=}           additional constraint based on evaluation of Perl EXPR
- context <TAG_PATTERN>  context must match <TAG_PATTERN> 
- goto <TAG>             changes context to specified <TAG> 
+ context <TAG_PATTERN>  context must match <TAG_PATTERN>
+ goto <TAG>             changes context to specified <TAG>
  enable <TAG_PATTERN>   enable tagged rules matching <TAG_PATTERN>
  disable <TAG_PATTERN>  disable tagged rules matching <TAG_PATTERN>
  msg <TEXT>             display <TEXT>
@@ -888,21 +888,21 @@ be extracted as a PGP signed document.
    # Initializations
    #------------------------------------------------------------------------
    &Initialize;
-    
+
    $banner = sprintf("\n%s %s\n%s",$tool,$revs,&VersionBanner);
 
    #========================================================================
    # Process command line arguments
    #------------------------------------------------------------------------
    &Process_Command_Line;
-    
+
    &Error("No input file to scan!?") unless @INPUT_FILES or defined $only_rules;
 
    #========================================================================
    # Read the rules
    #------------------------------------------------------------------------
    &Read_Rules;
-    
+
    # Check to see if user specified -k, -f or -F and whether any rules
    # were read.
    if (scalar @RULE_LOL == 0) {
@@ -914,7 +914,7 @@ be extracted as a PGP signed document.
       &Dump_Rules($DUMP_FILE,$only_rules);
       &Exit(1);;
    }#endif
-    
+
    #========================================================================
    # Process the log files
    #------------------------------------------------------------------------
@@ -936,9 +936,9 @@ be extracted as a PGP signed document.
    }#endif
    &Printf2Both("%s\n",($sep1 x $SW)); # separator
    &Printf2Both("Exit status %d (0x%x)\n", &Exit_Status, &Exit_Status);
-    
+
    &Exit(&Exit_Status);
-    
+
    die("PANIC: How did we get here?");
 
 #############################################################################
@@ -1086,7 +1086,7 @@ sub Info {
    my $CNT = &Plural($cnt,'time',-2,'',1);
    my $RNG = ($min > 0 and $min == $max) ? "$min"
          : ($min > 0 and $max > 0)     ? "$min to $max"
-         : ($min > 0)                  ? "min $min" 
+         : ($min > 0)                  ? "min $min"
          : ($max > 0)                  ? "max $max"
          :                               "?";
    my @SUBST = ();
@@ -1136,10 +1136,10 @@ sub Message {
    my $CND = 'expected';
    my $CNT = &Plural($cnt,'time',-2,'',1);
    my $RNG = ($min > 0 and $min == $max) ? "$min"
-         : ($min > 0 and $max > 0)     ? "$min to $max"
-         : ($min > 0)                  ? "min $min" 
-         : ($max > 0)                  ? "max $max"
-         :                               "?";
+           : ($min > 0 and $max > 0)     ? "$min to $max"
+           : ($min > 0)                  ? "min $min"
+           : ($max > 0)                  ? "max $max"
+           :                               "?";
    if ($line eq '' and ($min ne '' and $cnt < $min) or ($max ne '' and $cnt > $max)) {
       $msg = 'Found $CNT vs $RNG in expected pattern {$pat} - $tag';
    } elsif ($line eq '' and $typ eq 'count') {
@@ -1517,15 +1517,15 @@ ALPHA version - EXPECT minor problems
 .
    } elsif ($vb_state =~ m/Beta/) {
       $banner = <<'.';
-BETA version - possible problems 
+BETA version - possible problems
 .
    } elsif ($vb_state =~ m/Old/) {
       $banner = <<'.';
-Old version - possible problems 
+Old version - possible problems
 .
    } elsif ($vb_state =~ m/Specified/) {
       $banner = <<'.';
-Specified version - known characteristics 
+Specified version - known characteristics
 .
    } else {
       $banner = "Production Version - Please report any problems.\n";
@@ -2011,13 +2011,13 @@ sub Next_Sho_Line {
 
 #############################################################################
 #
-#  ######                                                  
-#  #     #  #####    ####    ####   ######   ####    ####  
-#  #     #  #    #  #    #  #    #  #       #       #      
-#  ######   #    #  #    #  #       #####    ####    ####  
-#  #        #####   #    #  #       #            #       # 
-#  #        #   #   #    #  #    #  #       #    #  #    # 
-#  #        #    #   ####    ####   ######   ####    ####  
+#  ######
+#  #     #  #####    ####    ####   ######   ####    ####
+#  #     #  #    #  #    #  #    #  #       #       #
+#  ######   #    #  #    #  #       #####    ####    ####
+#  #        #####   #    #  #       #            #       #
+#  #        #   #   #    #  #    #  #       #    #  #    #
+#  #        #    #   ####    ####   ######   ####    ####
 #
 #############################################################################
 sub Process_Log_Files {
@@ -2074,10 +2074,9 @@ sub Process_Log_Files {
          RULE: for ($iRULE=$#RULE_LOL; $iRULE >= $[; $iRULE--) {
             $RULE = $RULE_LOL[$iRULE];
             $typ = $RULE->[$fTYP];
-            #Debug(0x0002,"EVALUATING rule $typ");
-
             $cnd = $RULE->[$fCND];
             $cmp = $RULE->[$fCMP];
+            #&Debug(0x0003,"NEW rule typ='$typ', cnd='$cnd', cmp='$cmp'.");
             next RULE if $cnd eq 'post' or $cmp eq 'expr'; # handled after file scan
 
             #------------------------------------------------------------
@@ -2086,7 +2085,8 @@ sub Process_Log_Files {
             $ena = $RULE->[$fENA];
             next RULE unless $ena;
             $frc = $RULE->[$fFRC];
-            next RULE if $skip and (!$frc or $typ =~ m/^(count|eval|alert|info|context|require|include|use)$/);
+            $min = $RULE->[$fMIN];
+            next RULE if ($skip and ($min eq '' or $min < 1) and (!$frc or $typ =~ m/^(count|eval|alert|info|context|require|include|use)$/));
 
             #------------------------------------------------------------
             # evaluate context conditioning
@@ -2170,7 +2170,7 @@ sub Process_Log_Files {
             my $variance = 0;
             if (($max eq '' or  ($cnt + 1) < $max) and $alw ne '') {
                $variance = not &Eval($alw);
-               $allowed = 0 if $allowed eq ''; 
+               $allowed = 0 if $allowed eq '';
                $allowed++ if $variance;
             }#endif
             next LINE if $variance and $OPT_exact;
@@ -2185,8 +2185,8 @@ sub Process_Log_Files {
             #------------------------------------------------------------
             # Handle immediate evaluations
             #------------------------------------------------------------
-            if (($cnd eq 'if'     and ($min eq '' or $min <= $cnt)) and ($max eq '' or $cnt <= $max) 
-            or  ($cnd eq 'unless' and ($min  eq ''or $min <= $cnt))
+            if (($cnd eq 'if'     and ($min eq '' or $min <= $cnt)) and ($max eq '' or $cnt <= $max)
+            or  ($cnd eq 'unless' and ($min eq '' or $min <= $cnt))
             ) {
                $evl = $RULE->[$fEVL];
                &Eval($evl) if $evl ne '';
@@ -2201,7 +2201,7 @@ sub Process_Log_Files {
             #------------------------------------------------------------
             # consider min/max requirements
             #------------------------------------------------------------
-            if (   ($cnd eq 'unless' and ($max eq '' or $cnt <= $max))
+            if (  ($cnd eq 'unless' and ($max eq '' or $cnt <= $max))
                or ($min ne '' and $cnt < $min)
                or ($cnd eq 'if' and $max ne '' and $cnt > $max)
             ) {
@@ -2374,7 +2374,7 @@ sub Process_Log_Files {
             #---------------------------------------------------------
             $alw = $RULE->[$fALW];
             if ($alw ne '') {
-               $allowed = 0 if $allowed eq ''; 
+               $allowed = 0 if $allowed eq '';
                if (not &Eval($alw)) {
                   # Not exactly the same, thus variance
                   $allowed++;
@@ -2433,7 +2433,7 @@ sub Process_Log_Files {
          # consider min/max requirements
          #------------------------------------------------------------
 ###!?       #$min = $max = 1 if $min eq 0 and $max eq 0;
-         if (($min ne '' and $cnt < $min) 
+         if (($min ne '' and $cnt < $min)
          or  ($and ne '' and not &Eval($and))
          #   took care of max during main loop
          ) { # out of range
@@ -2453,7 +2453,7 @@ sub Process_Log_Files {
          $STAT{$INPUT_FILE,'allowance'} = $allowed;
          $allowed = '';
       }#endif
-        
+
       #================================================================
       # Output file summary if more than one file
       #----------------------------------------------------------------
@@ -2500,7 +2500,7 @@ sub Save_Rules {
          $SAVE_LOL[$i][$j] = $RULE_LOL[$i][$j];
       }#endfor $j
    }#endfor $i
-}#endsub Save_Rules 
+}#endsub Save_Rules
 
 sub Restore_Rules {
    my ($i, $j);
@@ -2509,7 +2509,7 @@ sub Restore_Rules {
          $RULE_LOL[$i][$j] = $SAVE_LOL[$i][$j];
       }#endfor $j
    }#endfor $i
-}#endsub Restore_Rules 
+}#endsub Restore_Rules
 
 ##############################################################################
 sub Initialize {
@@ -2555,7 +2555,7 @@ sub Initialize {
    $FALSE = 0;
    $true  = 'true'; # Temporary
    $false = '';     # Temporary
-    
+
    #----------------------------------------------------------------------------
    # Arrays
    #----------------------------------------------------------------------------
@@ -2731,7 +2731,7 @@ sub Required_Context {
    }#endif
    $required_context = $max_context if $required_context < $max_context;
 }#endsub Required_Context
-    
+
 #############################################################################
 sub Eof {
    return $TRUE if $RULE_FILE eq '' or eof(INCL_HNDL);
@@ -3203,11 +3203,11 @@ sub Parse_Rule {
          &Warn("Unknown comparison '$&'.\n?'$ORIG_TXT'");
          return 0;
       }#endif
-      &Debug(0x0002,"PARSING '$cmp' comparison");
+      &Debug(0x0002,"PARSING '$cmp' comparison with '$cnd' condition.");
       if ($cmp eq 'expr') {
-           ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
+	 ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
       } elsif ($cnd ne 'post') {
-           ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
+	 ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
       }#endif
       # Handle actions
       while ($CURR_TXT =~ s/^\s*(\w+)\s+// or $CURR_TXT =~ s/^\s*(#).*//) {
@@ -3295,6 +3295,7 @@ sub Parse_Rule {
             return 0;
          }#endif
       }#endwhile
+      $min = 1 if ($cnd eq "unless" and $min eq ''); # Need to find at least one if min not specified.
       if ($CURR_TXT =~ m/^\s*(#.*)?$/) {
          &Add_Rule($ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl);
       } else {
@@ -3627,18 +3628,18 @@ echo "Basic logscan test.rules"
 echo "- Expect 0 fatals 1 severe  2 errors 1 warning  for sample1.log"
 echo "- Expect 1 fatals 2 severes 2 errors 3 warnings for sample2.log"
 severe unless contains "Test revision 1.1"
-ABORT: severe if matches /^ABORT\b/                                  
+ABORT: severe if matches /^ABORT\b/
 note if matches /Dont abort/ disable ABORT
 NONZERO:  context if firstword "compile"
-NONZERO:  context if firstword "link"                           
+NONZERO:  context if firstword "link"
 NONEMPTY: context if firstword "find"
-error if matches /^0$/  msg "Command failed" context NONZERO  
-error if matches /^{}$/ msg "Command failed" context NONEMPTY 
-KEYWORD: context if firstword "if"                             
+error if matches /^0$/  msg "Command failed" context NONZERO
+error if matches /^{}$/ msg "Command failed" context NONEMPTY
+KEYWORD: context if firstword "if"
 warning unless words "descriptions" min 2 max 3
 warning unless contains "There" min 2 max 2
 warning expect word "part" only 2
-warning if contains "latch"                           
+warning if contains "latch"
 fatal if contains 'very fatal' message "Intentional fatal"
 severe unless contains " END " msg "Never finished"
 # END #######################################################################
@@ -3715,7 +3716,7 @@ to come to the aid of their fellow
 criminal and end this reign of terror
 and violence towards fellow men..
 
-There are many descriptions 
+There are many descriptions
 of descriptions.
 
 This should be very fatal.
@@ -3912,9 +3913,9 @@ syn keyword logscanKeywords   always only show enable disable allow goto
 syn keyword logscanKeywords   disallow min max limit eval and clear expr
 syn keyword logscanKeywords   verbose quiet log debug
 syn match   logscanIdentifier  "\<[A-Z][A-Z0-9_]\+\>"
-syn region  logscanString start=+"+  end=+"+  
-syn region  logscanString start=+/+  end=+/+  
-syn region  logscanString start=+{+  end=+}+  
+syn region  logscanString start=+"+  end=+"+
+syn region  logscanString start=+/+  end=+/+
+syn region  logscanString start=+{+  end=+}+
 
 " The logscan header is recognized starting with a "keyword:" line and ending
 " with an empty line or other line that can't be in the header.
@@ -3983,7 +3984,7 @@ syn match  logInfo    "^INFO.*"
 syn match  logInfo    "^Info.*"
 syn match  logInfo    "^NOTE\>.*"
 syn match  logInfo    "^Note\>.*"
-syn region logString  start=+"+  end=+"+  
+syn region logString  start=+"+  end=+"+
 
 if !exists("did_log_syntax_inits")
   let did_log_syntax_inits = 1
@@ -4152,23 +4153,23 @@ LOGSCAN: A Configurable Error Management Utility
 Copyright 1997-2001,2008 by David C. Black. All rights reserved.
 
 ABSTRACT:
-A common problem facing most EDA tools users is how to filter through 
-hundreds of lines of EDA tool output and quickly focus on the important 
-information. Tools such as Synopsys Design Compiler or Quad Design Motive 
-Static Timing analyzer produce messages classified as "errors", "warnings", 
-or "information" in great volumes. Typically, there are simple methods to 
-suppress one or more of these messages. Unfortunately, suppression often 
-leads to ignoring important information. On the other hand, reading every 
-line of a long report is very error prone. Some engineers choose to use 
-various forms of the UNIX 'grep' utility to solve their problems; however, 
-it tends to be limited to single line errors. Frequently, multi-lines of 
-information are necessary to realize there is a problem and understand what 
-needs fixing. Finally, some errors or lines are expected/required (e.g. 
+A common problem facing most EDA tools users is how to filter through
+hundreds of lines of EDA tool output and quickly focus on the important
+information. Tools such as Synopsys Design Compiler or Quad Design Motive
+Static Timing analyzer produce messages classified as "errors", "warnings",
+or "information" in great volumes. Typically, there are simple methods to
+suppress one or more of these messages. Unfortunately, suppression often
+leads to ignoring important information. On the other hand, reading every
+line of a long report is very error prone. Some engineers choose to use
+various forms of the UNIX 'grep' utility to solve their problems; however,
+it tends to be limited to single line errors. Frequently, multi-lines of
+information are necessary to realize there is a problem and understand what
+needs fixing. Finally, some errors or lines are expected/required (e.g.
 the Thankyou message at the end of a synopsys session).
 
-With the above framework in mind, I developed tools over the years that 
-address this very issue. The remainder of the paper demonstrates a 
-successful solution implemented with PERL. The script itself, 
+With the above framework in mind, I developed tools over the years that
+address this very issue. The remainder of the paper demonstrates a
+successful solution implemented with PERL. The script itself,
 independently developed, made available as charity-ware via the Internet
 the EDA community via the HLD Wizard Web site <http://www.hldwizard.com>.
 
@@ -4212,7 +4213,7 @@ INSTALLATION
 
 Copyright 1997-2001,2008 by David C. Black. All rights reserved.
 
-NOTE: LOGSCAN is a PERL 5.0 script designed for use in a UNIX 
+NOTE: LOGSCAN is a PERL 5.0 script designed for use in a UNIX
 environment; however, there is very little that is UNIX specific,
 and LOGSCAN should be able to work on a PC or Macintosh running PERL
 with very little modification.
@@ -4231,7 +4232,7 @@ have the correct readme files, and manpage available.
    logscan -INSTALL
 
 NOTE: If PERL is not installed as 'perl', it may be necessary
-to modify the first line of the LOGSCAN script. In this event, the 
+to modify the first line of the LOGSCAN script. In this event, the
 PGP signature will not work on the modified copy. Alternately, you
 may require users to invoke LOGSCAN with: perl logscan ARGUMENTS
 

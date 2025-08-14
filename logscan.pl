@@ -4153,8 +4153,19 @@ __HISTORY__
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 HISTORY (released versions)
 
-VERSION 2.49
-- Documentation issues corrected
+VERSION 2.51
+- Fixed behavior of "unless" command
+- Made include, require and use commands to allow for quoted or unquoted
+   file names.
+- Signficantly modified the test.sh script
+   * The script is now designed to create a test directory "regression_tests"
+   * The script will capture all STDOUT and STDERR into "test_output.txt"
+   * If the directory "regression_tests" already exist, it will be moved
+     using an "_ddd" suffix.  (Same with "test_output.txt")
+- Updated some tests that were not working correctly.
+
+VERSION 2.50
+- Fixed Depricated Code
 
 VERSION 2.48
 - Force output to flush properly

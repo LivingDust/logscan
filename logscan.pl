@@ -27,7 +27,7 @@ use vars qw(
    $auth = 'David C Black <dcblack@hldwizard.com>';
    $tool = 'logscan'; $TOOL = uc($tool);
    ($Tool = $tool) =~ s/^./\u$&/;
-   $vers = '@(#)$Id: logscan.pl,v 2.50 2008/06/27 16:08:32 dcblack Exp $';
+   $vers = '@(#)$Id$';
    $offl = '2.47'; # Official revision
    $revs = &RcsVersion($vers); # Revision string
    ($revn = $revs) =~ s/ .*//; # Revision number
@@ -2956,7 +2956,9 @@ sub Enable_Rule { # --- ? ? ? ? Bug ? ? ? ? ---
    my ($dst, $flag) = @_;
    my ($tag, $found, $rule_index);
    #$flag = ($flag) ? $TRUE : $FALSE;
+   $found=0;
    foreach $tag (keys %TAG) {
+      &Debug(0x0002,"SKB: testing tag='$tag'.");
       if ($tag =~ m{^$dst$}) {
          $found++;
          foreach $rule_index (@{$TAG{$tag}}) {
@@ -2966,7 +2968,7 @@ sub Enable_Rule { # --- ? ? ? ? Bug ? ? ? ? ---
          }#endforeach
       }#endif
    }#endforeach
-   &Debug(0x0100,"ENABLE rule $flag $dst found $found");
+   &Debug(0x0002,"SKB: 100: ENABLE rule flag='$flag', dst='$dst', found='$found'.");
    if ($found == 0) {
       &Warn("No matching tags for {$dst}.");
    } else {
@@ -3002,10 +3004,11 @@ sub Add_Rule {
       $evl, # '', expr
    )=@_;
    my (@THIS_RULE) = &New_Rule($ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl);
-   #Debug(0x0001,"ADDING rule '$typ'");
+   Debug(0x0001,"SKB: 1: ADDING rule '$typ'");
    my $RULE_REF = [ @THIS_RULE ];
    &Display_Rule(1, $RULE_REF); # display if needed for DEBUG
    push(@RULE_LOL,  $RULE_REF); # for sequential access to rules
+   &Debug(0x0002, "SKB: About to push tag='$tag' for rule '$#RULE_LOL'");
    push(@{$TAG{$tag}}, $#RULE_LOL); # for easy access to tags
    push(@{$TYP{$typ}}, $#RULE_LOL); # for easy access to rules
 }#endsub Add_Rule
@@ -3020,6 +3023,7 @@ sub Parse_Pattern {
    if ($CURR_TXT =~ s/^.//) {
       my $delim = $&;
       $delim = $rh{$delim} if defined $rh{$delim};
+      &Debug(0x0002, "SKB: Parse_Pattern: delim='$delim'");
       my $delim_index = -1;
       my $local_context = 1;
       while (($delim_index = index($CURR_TXT,$delim)) < 0) {
@@ -3032,6 +3036,7 @@ sub Parse_Pattern {
       $required_context = $local_context if $local_context > $required_context;
       $mul = $local_context if $local_context > 1;
       $pat .= substr($CURR_TXT,0,$delim_index);
+      &Debug(0x0002, "SKB: Parse_Pattern: pat='$pat'.");
       while ($pat =~ s/[\$]([A-Za-z]\w*)/\001/ or $pat =~ s/[\$]{([A-Za-z]\w*)}/\001/) {
          my $macro = $main::VAR{$1};
          $pat =~ s/\001/$macro/;
@@ -3152,12 +3157,13 @@ sub Parse_Rule {
       $evl, # '', expr
    ) = (('') x scalar(@FLD));
    my ($VAR, $VAL);
-   &Debug(0x0008,"PARSING RULE: '%s'",$CURR_TXT);
+   &Debug(0x0002,"SKB: 8: PARSING RULE: '%s'",$CURR_TXT);
    return if $CURR_TXT =~ m:^\s*((#|(//)|(--)).*)?$:; # skip comments
    $CURR_TXT =~ s/^\s+//; # remove leading whitespace
    my $ORIG_TXT = $CURR_TXT; # for error messages
    # Pull off context tags if any
    $tag = ($CURR_TXT =~ s/^([_a-zA-Z]\w*):\s*//) ? $1 : $RULE_FILE.'//'.$RULE_LNO;
+   &Debug(0x0002,"SKB: tag '$tag'");
    $kw = '';
    if ($CURR_TXT =~ m/^[\$](\w+)\s*=s*/) {
       # Grab variable assignments
@@ -3174,15 +3180,18 @@ sub Parse_Rule {
       &Warn("Unrecognized command!\n?'$ORIG_TXT'");
       return 0;
    }#endif
+   &Debug(0x0002, "SKB: kw='$kw', CUR_TXT='$CURR_TXT'.");
    if (grep($kw eq $_, @ENA) and $CURR_TXT =~ s/^\s+(\S+)\s+(\w+)\s+/ $2 /) {
       # Grab enable/disable pattern with conditional
       ($ds0,$cnd) = ($1,&Alias($2));
-   } elsif (grep($kw eq $_, @INC) and $CURR_TXT =~ s/^\s+"(\S+)"\s+(\w+)\s+/ $2 /) {
+   } elsif (grep($kw eq $_, @INC) and ($CURR_TXT =~ s/^\s+"(\S+)"\s+(\w+)\s+/ $2 / or $CURR_TXT =~ s/^\s+(\S+)\s+(\w+)\s+/ $2 /)) {
       # Grab use/require/include file with conditional
       ($inc,$cnd) = ($1,&Alias($2));
+      &Debug(0x0002, "SKB: Matched an include rule with a condition inc='$inc', cnd='$cnd'.");
    } elsif ($CURR_TXT =~ m/^\s+(\w+)\s+/) {
       # Grab conditional if bare
       $cnd = &Alias($1);
+      &Debug(0x0002, "SKB: Matched a nonparsed rule with cnd='$cnd'.");
    }#endif
    if (defined $disallow{$kw}) {
       &Warn("Disallowed command: '$kw'");
@@ -3194,7 +3203,7 @@ sub Parse_Rule {
       #--------------------------------------------------------------------
       $typ = $kw;
       $CURR_TXT =~ s/^\s+(\w+)\s+//;
-      &Debug(0x0002,"PARSING '$kw $cnd' pattern rule");
+      &Debug(0x0002,"PARSING kw='$kw', cnd='$cnd' pattern rule");
       if ($CURR_TXT =~ m/^(\w+)\s*/ and $cmp = &Alias($1) and grep($cmp eq $_,@CMP)) {
          $CURR_TXT =~ s/^\w+\s*//;
       } elsif ($cnd eq 'post') {
@@ -3205,13 +3214,15 @@ sub Parse_Rule {
       }#endif
       &Debug(0x0002,"PARSING '$cmp' comparison with '$cnd' condition.");
       if ($cmp eq 'expr') {
-	 ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
+	      ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
       } elsif ($cnd ne 'post') {
-	 ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
+	      ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
       }#endif
+      &Debug(0x0002,"PARSING action and='$and',pat='$pat'.");
       # Handle actions
       while ($CURR_TXT =~ s/^\s*(\w+)\s+// or $CURR_TXT =~ s/^\s*(#).*//) {
          my ($action) = &Alias($1);
+         &Debug(0x0002,"SKB: PARSING '$action' action");
          next if $action eq '#'; # skip trailing comments
          &Debug(0x0002,"PARSING '$action' action");
          if ($action eq 'msg') {
@@ -3282,6 +3293,7 @@ sub Parse_Rule {
                return 0;
             }#endif
          } elsif ($action eq 'include' or $action eq 'require' or $action eq 'use') {
+            &Debug(0x0002, "SKB: CURR_TEXT='$CURR_TXT'");
             if ($CURR_TXT =~ s/^(\S+)\s*//) {
                my $inc = $1;
             } else {
@@ -3296,7 +3308,9 @@ sub Parse_Rule {
          }#endif
       }#endwhile
       $min = 1 if ($cnd eq "unless" and $min eq ''); # Need to find at least one if min not specified.
+      &Debug(0x0002, "SKB: $ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl");
       if ($CURR_TXT =~ m/^\s*(#.*)?$/) {
+         &Debug(0x0002, "SKB: Adding rule!");
          &Add_Rule($ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl);
       } else {
          &Warn("Illegal syntax for '$kw' rule.\n?'$ORIG_TXT'");
@@ -3314,10 +3328,12 @@ sub Parse_Rule {
       }#endif
       return 0;
    #------------------------------------------------------------------------
-   } elsif ($kw eq 'include' or $kw eq 'require' or $kw eq 'use') {
-      if ($CURR_TXT =~ s/^\s+"(\S+)"\s*$//) {
+   } elsif (grep($kw eq $_, @INC)) {
+   #} elsif ($kw eq 'include' or $kw eq 'require' or $kw eq 'use') {
+      &Debug(0x0002,"SKB: PARSING file inclusion command");
+      if ($CURR_TXT =~ s/^\s+"(\S+)"\s*$// or $CURR_TXT =~ s/^\s+(\S+)\s*$//) {
          my $file = $1;
-         &Debug(0x0002,"PARSING file inclusion command");
+         &Debug(0x0002,"PARSING file inclusion command, file='$file'.");
          # search for file
          my $path = &Find_File($file);
          if ($path ne '') {
@@ -3599,25 +3615,81 @@ __EXEC__ chmod 755 test.sh
 #! /bin/sh
 #--------------------------------------------------------------------------
 # Regression test script
+# Run this script in the logscan directory.
+# This script will makke a directory "regression_test" amd run some tests
+# Examine the file "test_output.txt"
 #--------------------------------------------------------------------------
+# Move old regression test directory if exists
+testOut="$PWD/test_output.txt"
+testDir="$PWD/regression_test"
+if [ -d "$testDir" ]; then
+      i=1
+      while [ -d "${testDir}_$(printf "%03d" $i)" ]; do ((i++)); done
+      suffix="_$(printf "%03d" $i)"
+      mv "$testOut" "${testOut}$suffix"
+      mv "$testDir" "${testDir}$suffix"
+      echo "INFO: Existing test directory and output file moved with suffix=\"$suffix\""
+fi
+
+touch "$testOut"
+exec &>>"$testOut"
+
+# Populate the test directory
+set -x
+mkdir $testDir
+cd $testDir
+ln -s ../logscan.pl logscan
+echo "#--------------------------------------------------------------------------"
 logscan
+echo "#--------------------------------------------------------------------------"
 logscan -?
-logscan -h
-logscan -man
-logscan -XT test.sh      \
-      -XT test.rules   \
-      -XT sample1.log  \
-      -XT sample2.log  \
-      -XT all.rules    \
-      -XT nil.rules    \
-      -XT killer.log   \
-      THE-END
+echo "#--------------------------------------------------------------------------"
 logscan -V
-logscan -v -k all -d compiled.rules
+echo "#--------------------------------------------------------------------------"
+logscan -h
+echo "#--------------------------------------------------------------------------"
+
+mkdir ./man
+cd ./man
+../logscan -man
+cd ..
+echo "#--------------------------------------------------------------------------"
+
+rulesDir="./rules"
+mkdir $rulesDir
+cd $rulesDir
+../logscan \
+      -XT test.rules     \
+      -XT all.rules      \
+      -XT nil.rules      \
+      -XT killer.rules   \
+      -XT template.rules \
+      -XT synopsys.rules \
+      THE-END
+cd ..
+echo "#--------------------------------------------------------------------------"
+
+logscan \
+      -XT sample1.log \
+      -XT sample2.log \
+      -XT killer.log  \
+      -XT logscan.vim \
+      -XT log.vim     \
+      THE-END
+echo "#--------------------------------------------------------------------------"
+logscan -v -p $rulesDir -k all -d compiled.rule
+echo "#--------------------------------------------------------------------------"
 logscan NO_SUCH_FILE
-logscan -k test sample1.log
-logscan -k test sample2.log
-logscan -INSTALL
+echo "#--------------------------------------------------------------------------"
+logscan -p $rulesDir -k test sample1.log -l sample1.rpt -j -banner
+echo "#--------------------------------------------------------------------------"
+logscan -p $rulesDir -k test sample2.log -l sample2.rpt -html
+echo "#--------------------------------------------------------------------------"
+echo "Finished regression testing.  Look at file $(basename $testOut) for results."
+echo "If satisfied with the results, you can type"
+echo "> logscan -INSTALL"
+echo "to extract installation files."
+echo "#--------------------------------------------------------------------------"
 #- END ----------------------------------------------------------------------
 __EOF__
 
@@ -3735,6 +3807,8 @@ __ALL.RULES__
 // all comments
 -- all styles
 verbose
+# Note: This resets all previous rules.
+use "test.rules"
 ignore  if     matches   /never mind/
 fatal   if     firstword "ABORT"
 severe  if     contains "core dump"
@@ -3745,8 +3819,7 @@ info    if     word "infer"
 note    if     firstword "INFO:"
 count   if     firstword "stamp" and {= $1 > 4.1 =}
 CMD: context if firstword /compile/
-use test.rules
-require nil.rules
+require "nil.rules"
 include nil.rules
 alias goof=error
 alias oops = warning
@@ -3954,6 +4027,7 @@ endif
 let b:current_syntax = "logscan"
 
 __EOF__
+
 __LOG.VIM__
 " Vim syntax file
 " Language:	Logscan report file

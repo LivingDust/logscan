@@ -1,6 +1,6 @@
 #!/usr/bin/perl
 eval 'exec perl -S $0 ${1+"$@"}'
-  if $running_under_some_shell;
+   if $running_under_some_shell;
 
 require v5.6.1;
 
@@ -19,29 +19,30 @@ use Cwd;
 use FileHandle;
 STDOUT->autoflush(1);
 STDERR->autoflush(1);
+use File::Basename;
 
 use vars qw(
    $auth  $tool  $TOOL  $Tool      $vers  $offl  $revs  $revn
    $when  $user  $date  $toolpath  $wd    $host
-);
-   $auth = 'David C Black <dcblack@hldwizard.com>';
-   $tool = 'logscan'; $TOOL = uc($tool);
-   ($Tool = $tool) =~ s/^./\u$&/;
-   $vers = '@(#)$Id$';
-   $offl = '2.47'; # Official revision
-   $revs = &RcsVersion($vers); # Revision string
-   ($revn = $revs) =~ s/ .*//; # Revision number
-   $when = scalar localtime;
-   $user = getlogin || (getpwuid($<))[0] || "Intruder!";
-   $date = &RcsDate();
-   if ($0 =~ m:/([^/]+)$:) {
-      ($tooldir,$toolnam) = ($`,$1);
-   } else {
-      ($tooldir,$toolnam) = ('.',$0);
-   }#endif
-   $toolpath = $tooldir.'/'.$toolnam;
-   $wd = cwd();
-   chomp($host = `hostname`);
+   );
+$auth = 'David C Black <dcblack@hldwizard.com>';
+$tool = 'logscan'; $TOOL = uc($tool);
+($Tool = $tool) =~ s/^./\u$&/;
+$vers = '@(#)$Id$';
+$offl = '2.51'; # Official revision
+$revs = &RcsVersion($vers); # Revision string
+($revn = $revs) =~ s/ .*//; # Revision number
+$when = scalar localtime;
+$user = getlogin || (getpwuid($<))[0] || "Intruder!";
+$date = &RcsDate();
+if ($0 =~ m:/([^/]+)$:) {
+   ($tooldir,$toolnam) = ($`,$1);
+} else {
+   ($tooldir,$toolnam) = ('.',$0);
+}#endif
+$toolpath = $tooldir.'/'.$toolnam;
+$wd = cwd();
+chomp($host = `hostname`);
 
 
 #############################################################################
@@ -69,7 +70,7 @@ B<logscan> -k <KIND> <I<OPTIONS>> <I<FILES-TO-SCAN>>
 
  -?          short help (this text)
  -banner     Indicate PASS/FAIL as a banner
- -c <RANGE>  context specificaton (default 3..20)
+ -c <RANGE>  context specification (default 3..20)
  -d [<FILE>] dump parsed rules in a compiled format to file (default logscan.rules)
  -e <EXTN>   file name extension used for rules (default '.rules')
  -f <FILE>   include file containing auxiliary rules
@@ -83,7 +84,12 @@ B<logscan> -k <KIND> <I<OPTIONS>> <I<FILES-TO-SCAN>>
  -man        output manpage to file $tool.1 and exit
  -n          no context, just message pointers
  -o <FILE>   same as -l
- -p <PATH>   search path for rules files (default '/usr/local/etc:.')
+ -p <PATHS> or --path <PATHS>
+             A colon ":" separated list of search paths for rules files
+             If first char = '^' prepend to search paths.
+             If first char = '$' append to search paths.
+             Otherwise replace search paths.
+             (default search paths '<INSTALL_PATH>/etc:.')
  -passfail   indicate PASS/FAIL status as single line message
  -q          quiet (minimal runtime messages)
  -tee        display messages to screen and logfile simultaneously
@@ -205,10 +211,46 @@ Useful for some editors as "tag" files.
 
 Same as B<-l>.
 
-=item B<-p> <I<PATH>>
+=item B<-p> or B<--path> <I<PATHS>>
 
-Search path for rules files. Default
-'/usr/local/etc:.'.
+Search paths for rules files. Default '<INSTALL_PATH>/etc:.'.
+
+- Use a colon ":" to separating directories.
+
+- If PATHS starts with "^" then the list of directories
+  will be prepended to the paths already stored.
+
+- If PATHS starts with "$" then the list of directories
+  will be appended to the paths already stored.
+
+- Otherwise replace rules files list.
+
+=over
+
+=item Example 1:
+
+-p "^/a/rules/path:~/another/rules/path"
+
+The paths /a/new/rules/path and /another/rules/path will be placed in
+front of any rules paths already stored.
+
+=item Example 2:
+
+--path "\$/a/new/rules/path:~$VAR/rules/path"
+
+The paths /a/new/rules/path and $VAR/rules/path will be placed behind
+any rules paths already stored.  (NOTE: if using double quotes the
+dollar sign must be escaped with a backslash to keep the UNIX shell
+from trying to expand it like variable substitution,
+
+=item Example 3:
+
+-p "/my/proj/path:~/another/path"
+
+The paths /a/new/path and /another/path will replace any existing
+rules paths already stored (including the default paths.)
+
+=back
 
 =item B<-passfail>
 
@@ -253,13 +295,27 @@ Extract <I<NAME>>d file. For installation or examples.
  % dc_shell -f synth.dcs >synth.log
  % logscan -k synopsys synth.log
 
+ # This example will use the default rules paths looking for
+ # rules files that matches "synopsys.rules"
+
  % verilog -f rtlsim.mft -l rtlsim.log
- % logscan -k verilog -p "/usr/local/etc:../:./" \
+ % logscan -k verilog -p "\$/proj/local/etc:./rules:." \
    -F my.rules rtlsim.log
+
+ # In this example, the paths following -p are placed behind the
+ # default paths. Any rules files matching "verilog.rules" will
+ # will be read. However remember the last rules read will override
+ # other rules already read.
 
  % setenv LOGSCAN "-k ignore -p /corp/lib:/proj/lib -f drc.rules"
  % design_rule_check mydesign.data
  % logscan mydesign.err
+
+ # This example sets the LOGSCAN environment variable which
+ # will pass the argument string as if read on the command line
+ # in addition to any other command line arguments.  The arguments
+ # from the $LOGSCAN variable will be read first, allowing the
+ # arguments to be overridden on the command line.
 
 =head1 OUTPUT DESCRIPTION
 
@@ -283,7 +339,7 @@ I<logscan.rpt> `I<error>' message:
 
 Each message starts out with a message separator and message
 classification.  The classification includes information about the
-file name and line number where the problem ocurred.
+file name and line number where the problem occurred.
 
 This is followed by the actual text of the message and surrounding
 lines.  Lines include the line number in case you should need to look
@@ -292,7 +348,7 @@ detected in noted with a colon (:) in the first column.
 
 =head1 RULE DESCRIPTION
 
-Good rules make the difference between the sucessful use
+Good rules make the difference between the successful use
 of B<logscan> and failure. The following is a loose description
 of the syntax for specifying rules. Hopefully, this will
 be sufficient to get users started writing their own rules.
@@ -313,7 +369,7 @@ are valid comments:
 
 =head2 BASIC MESSAGES
 
-For purpose of this dicusssion, consider the following four lines
+For purpose of this discussion, consider the following four lines
 of logfile text. The trailing tilde (B<~>) marks the end of
 each line.
 
@@ -393,7 +449,7 @@ by multiple runs.
 
 Suppose all errors are of the basic form "ERROR:"; however, the
 tool reports unconnected ports as an error and for some reason
-you have two unnconnected ports that are intentional (e.g. the QBAR
+you have two unconnected ports that are intentional (e.g. the QBAR
 output of some flip-flops are unused). In this situation, you want to
 catch all the errors except these two. This situation uses the
 the 'B<unless>' condition combined with the B<only> clause.
@@ -422,7 +478,7 @@ exit status which is 1 if successful. Thus,
 
 Another situation might be a multiple phase log file containing
 several tools' output. In this situation you could identify the
-beginning text in each tool (hopefuly unique) to distiguish different
+beginning text in each tool (hopefully unique) to distinguish different
 classifications of errors.
 
  START: context if equals "Beginning run"
@@ -431,7 +487,7 @@ classifications of errors.
  POST: context if firstword "Beginning post-processing" context SIMULATE
  FINISH: context if equals "Finished run" context POST
 
-Notice the that context transisitions specified are orderly. Of course
+Notice the that context transitions specified are orderly. Of course
 this doesn't have to be the case. You must ensure that every statement
 has the appropriate B<context> qualifier.
 
@@ -441,7 +497,7 @@ significantly aids diagnosis of a problem. See B<-c> command-line
 option or B<limit> rule.
 
 IMPORTANT: There is only I<one> (1) active context at any point in time.
-Think of it as the I<state> varaible of a finite state machine. You
+Think of it as the I<state> variable of a finite state machine. You
 can change it dependently or not (e.g. reset might be independent).
 
 Finally, there is a 'B<goto>' qualifier that can be used to change context
@@ -462,7 +518,8 @@ as long as they are greater than a particular one:
 
 Expression must be enclosed in B<{=> B<=}> and conform to Perl requirements.
 Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>,
-and B<$6> are available.
+and B<$6>
+are available.
 
 =head2 ALLOWANCES
 
@@ -475,7 +532,8 @@ but want to know if it changed when issuing an exception:
 
 Expression must be enclosed in B<{=> B<=}> and conform to Perl requirements.
 Additionally, the variables B<$&>, B<$+>, B<$1>, B<$2>, B<$3>, B<$4>, B<$5>,
-and B<$6> are available.
+and B<$6>
+are available.
 
 =head2 CONTROLLING CONTEXTS
 
@@ -617,13 +675,13 @@ languages too. There are some predefined aliases too. For example,
 =head2 CONTROLLING RULES
 
 It is possible to disallow or reset entire classifications of rules (i.e.
-RULE_TYPE's. Once disallowed, a keyword can never be reallowed;
+RULE_TYPE's. Once disallowed, a keyword can never be re-allowed;
 however, if you setup an alias it is possible to use the alias. An
 administrator might use this capability.
 
 =head2 USING CALCULATIONS
 
-Sometimes it is necessary to gather statistics and make error judgements
+Sometimes it is necessary to gather statistics and make error judgments
 at the end. This is accomplished using the B<eval> clause in conjunction
 with the B<unless expr> operation.
 
@@ -727,7 +785,7 @@ NOTE 4: B<expr> is only valid in conjunction with B<unless>.
  enable <TAG_PATTERN>   enable tagged rules matching <TAG_PATTERN>
  disable <TAG_PATTERN>  disable tagged rules matching <TAG_PATTERN>
  msg <TEXT>             display <TEXT>
- only <NUMBER>          minimum and maximum occurence of <NUMBER> times
+ only <NUMBER>          minimum and maximum occurrence of <NUMBER> times
  min <NUMBER>           must appear at least <NUMBER> times to be considered
  max <NUMBER>           ignored if appears more than <NUMBER> times
  show <NUMBER>[ more[ lines]]
@@ -884,66 +942,65 @@ be extracted as a PGP signed document.
 
 #############################################################################
 
-   #========================================================================
-   # Initializations
-   #------------------------------------------------------------------------
-   &Initialize;
+#========================================================================
+# Initializations
+#------------------------------------------------------------------------
+&Initialize;
 
-   $banner = sprintf("\n%s %s\n%s",$tool,$revs,&VersionBanner);
+$banner = sprintf("\n%s %s\n%s",$tool,$revs,&VersionBanner);
 
-   #========================================================================
-   # Process command line arguments
-   #------------------------------------------------------------------------
-   &Process_Command_Line;
+#========================================================================
+# Process command line arguments
+#------------------------------------------------------------------------
+&Process_Command_Line;
 
-   &Error("No input file to scan!?") unless @INPUT_FILES or defined $only_rules;
+&Error("No input file to scan!?") unless @INPUT_FILES or defined $only_rules;
 
-   #========================================================================
-   # Read the rules
-   #------------------------------------------------------------------------
-   &Read_Rules;
+#========================================================================
+# Read the rules
+#------------------------------------------------------------------------
+&Read_Rules;
 
-   # Check to see if user specified -k, -f or -F and whether any rules
-   # were read.
-   if (scalar @RULE_LOL == 0) {
-      &Error("No rules of any kind read/specified!?");
-   } elsif ($rules_read == 0) {
-      &Warn("No -k $KIND$EXTN rules read!?");
-   }#endif
-   if ($only_rules) {
-      &Dump_Rules($DUMP_FILE,$only_rules);
-      &Exit(1);;
-   }#endif
+# Check to see if user specified -k, -f or -F and whether any rules
+# were read.
+if (scalar @RULE_LOL == 0) {
+   &Error("No rules of any kind read/specified!?");
+} elsif ($rules_read == 0) {
+   &Warn("No -k $KIND$EXTN rules read!?");
+}#endif
+if ($only_rules) {
+   &Dump_Rules($DUMP_FILE,$only_rules);
+   &Exit(1);;
+}#endif
 
-   #========================================================================
-   # Process the log files
-   #------------------------------------------------------------------------
-   &Process_Log_Files ;
+#========================================================================
+# Process the log files
+#------------------------------------------------------------------------
+&Process_Log_Files ;
 
-   #======================================================================
-   # Output overall statistics summary
-   #----------------------------------------------------------------------
-   &Printf2BothIfTee("%s\n",$sep1 x $SW);
-   foreach $typ (@STAT) {
-      #next unless defined $STAT{$typ};
-      &Printf2Both("Found total of %s\n", &Plural($STAT{$typ},$typ,-2),-1,0,1);
-   }#endforeach $typ
-   my $pass = &Exit_Status ? 'FAILED' : 'PASSED';
-   &Printf2Both("%s %s\n",$Tool, $pass) if defined $OPT_passfail;
-   if (defined $OPT_banner) {
-      &Printf2Both("%s\n\n",($sep1 x $SW)); # separator
-      system "banner $pass";
-   }#endif
-   &Printf2Both("%s\n",($sep1 x $SW)); # separator
-   &Printf2Both("Exit status %d (0x%x)\n", &Exit_Status, &Exit_Status);
+#======================================================================
+# Output overall statistics summary
+#----------------------------------------------------------------------
+&Printf2BothIfTee("%s\n",$sep1 x $SW);
+foreach $typ (@STAT) {
+   #next unless defined $STAT{$typ};
+   &Printf2Both("Found total of %s\n", &Plural($STAT{$typ},$typ,-2),-1,0,1);
+}#endforeach $typ
+my $pass = &Exit_Status ? 'FAILED' : 'PASSED';
+&Printf2Both("%s %s\n",$Tool, $pass) if defined $OPT_passfail;
+if (defined $OPT_banner) {
+   &Printf2Both("%s\n\n",($sep1 x $SW)); # separator
+   system "banner $pass";
+}#endif
+&Printf2Both("%s\n",($sep1 x $SW)); # separator
+&Printf2Both("Exit status %d (0x%x)\n", &Exit_Status, &Exit_Status);
 
-   &Exit(&Exit_Status);
+&Exit(&Exit_Status);
 
-   die("PANIC: How did we get here?");
+die("PANIC: How did we get here?");
 
 #############################################################################
 BEGIN {
-
 #############################################################################
 sub Quiet { ($verbosity eq 'quiet'); }
 
@@ -1507,7 +1564,7 @@ sub VersionBanner {
       $banner = "Production Version - Please report any problems.\n";
    } elsif ($vb_state =~ m/Exp/) {
       $banner = <<'.';
-EXPERIMENTAL VERSION
+PVERSION
 --------------------
 EXPECT MANY PROBLEMS
 .
@@ -1550,7 +1607,7 @@ sub RcsDate {
    ("$da $mo $yr");
 }#endsub RcsDate
 
-{
+{# begin documentation block.
 ##############################################################################
 # Documentation subroutines: Usage, Page, & Manpage
 ##############################################################################
@@ -1565,9 +1622,9 @@ sub Usage {
          last if -r $file;
       }#endfor
       $srcfile = $file;
-      &Die("Usage unable to find $srcfile!?") unless -r $srcfile;
+      &Die("Usage no read permissions for $srcfile!?") unless -r $srcfile;
    } else {
-      &Die("Usage unable to find $srcfile!?") unless -r $srcfile;
+      &Die("Usage no read permissions for $srcfile!?") unless -r $srcfile;
    }#endif
    printf "\n";
    printf "NOTE: %s\n\n",$message if $message ne '';
@@ -1607,9 +1664,9 @@ sub Manpage {
          last if -r $file;
       }#endfor
       $srcfile = $file;
-      &Die("Manpage unable to find $srcfile!?") unless -r $srcfile;
+      &Die("Manpage unable to find readable $srcfile!?") unless -r $srcfile;
    } else {
-      &Die("Manpage unable to find $srcfile!?") unless -r $srcfile;
+      &Die("Manpage unable to find readable $srcfile!?") unless -r $srcfile;
    }#endif
    if ($manfile eq '') {
       &Page;
@@ -1633,7 +1690,7 @@ sub Manpage {
       print STDERR "Extracted manpage file $manfile\n";
    }#endif
 }#endsub Manpage
-}
+}#end documentation block.
 
 #############################################################################
 sub numerically { $a <=> $b }
@@ -1644,15 +1701,12 @@ sub Keep {
 # by renaming any conflicts if possible. Second file name contains new
 # name of the old file if any.
 #
-   my ($file) = @_;
-   return ($file,'') unless (-e $file); # already unique
-   my ($separator) = '-#';
-   my ($directory) = '.';
-   my ($num) = 1;
-   my (@FILELIST);
-   $directory = $file if $file =~ m:/:;
-   $directory =~ s:/[^/]*$::;
-   $file =~ s:.*/::;
+   print("SKB: Entered Keep with '@_'.\n");
+   my ($longfile) = @_;
+   return ($longfile,'') unless (-e $longfile); # already unique
+   $directory = dirname($longfile);
+   $file = basename($longfile);
+   print("SKB: directory='$directory', file='$file'.\n");
    my ($length) = length($file) + length($separator);
    # Glob the directory
    opendir(DIR,$directory) or &Die("Couldn't open directory $directory\n");
@@ -1719,213 +1773,214 @@ sub Process_Command_Line {
    }#endforeach $opt
    &InsertARGV(split(' ',$ENV{$TOOL})) if defined $ENV{$TOOL};
 
-   ARG: while (@ARGV) { # ARGV LOOP
+ ARG: while (@ARGV) { # ARGV LOOP
       $arg = shift(@ARGV);
       #--------------------------------------------------------------------
       if ($arg eq '-?' or $arg eq '--usage') { # synopsis
-           &Usage($0);
-           exit 0;
+	 &Usage($0);
+	 exit 0;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-h' or $arg eq '--help') { # help
-           &Manpage($0);
-           exit 0;
+	 &Manpage($0);
+	 exit 0;
       #--------------------------------------------------------------------
       } elsif ($arg =~ m/^[a-zA-Z]\w+\=\w+$/) { # Environmental variables
-           eval "\$ENV{'$1'}=$2";
+	 eval "\$ENV{'$1'}=$2";
       #--------------------------------------------------------------------
       } elsif ($arg eq '-c' or $arg eq '--context') { # context
-           &Warn("Bad arguments to $arg") unless $ARGV[0] =~ m/(\d+)\.\.(\d+)/;
-           &Required_Context($1,$2);
-           shift(@ARGV);
+	 &Warn("Bad arguments to $arg") unless $ARGV[0] =~ m/(\d+)\.\.(\d+)/;
+	 &Required_Context($1,$2);
+	 shift(@ARGV);
       #--------------------------------------------------------------------
       } elsif ($arg eq '--debug') { # dump parsed rules when interrupted
-           $debug_dump = 1;
+	 $debug_dump = 1;
       #--------------------------------------------------------------------
       } elsif ($arg =~ m/^-d\d*/ or $arg eq '--dump') { # dump parsed rules and quit
-           $only_rules = 1;
-           $only_rules = $& if $arg =~ m/\d+/;
-           if ($ARGV[0] =~ /$EXTN$/) {
-              $DUMP_FILE = shift(@ARGV);
-           }#endif
+	 $only_rules = 1;
+	 $only_rules = $& if $arg =~ m/\d+/;
+	 if ($ARGV[0] =~ /$EXTN$/) {
+	    $DUMP_FILE = shift(@ARGV);
+	 }#endif
       #--------------------------------------------------------------------
       } elsif ($arg eq '-e' or $arg eq '--extn') { # extension specification
-           &Warn("Missing argument for $arg") unless $ARGV[0];
-           $EXTN = shift(@ARGV);
+	 &Warn("Missing argument for $arg") unless $ARGV[0];
+	 $EXTN = shift(@ARGV);
       #--------------------------------------------------------------------
       } elsif ($arg eq '-f') { # required include
-           &Warn("Missing argument for $arg") unless $ARGV[0];
-           if (-r $ARGV[0]) {
-               &Read_Rules;
-               &Include(shift(@ARGV));
-           } else {
-               &Warn("Missing file for $arg");
-           }#endif
+	 &Warn("Missing argument for $arg") unless $ARGV[0];
+	 if (-r $ARGV[0]) {
+	    &Read_Rules;
+	    &Include(shift(@ARGV));
+	 } else {
+	    &Warn("Missing file for $arg");
+	 }#endif
       #--------------------------------------------------------------------
       } elsif ($arg eq '-F' and $ARGV[0]) { # optional include
-           &Warn("Missing argument for $arg") unless $ARGV[0];
-           if (-r $ARGV[0]) {
-               &Read_Rules;
-               &Include(shift(@ARGV));
-           }#endif
+	 &Warn("Missing argument for $arg") unless $ARGV[0];
+	 if (-r $ARGV[0]) {
+	    &Read_Rules;
+	    &Include(shift(@ARGV));
+	 }#endif
       #--------------------------------------------------------------------
       } elsif ($arg eq '-keep' or $arg eq '--keep') { # indicate base rules to use
-           &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/^-?\d+$/;
-           $MAX_KEPT = shift(@ARGV);
+	 &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/^-?\d+$/;
+	 $MAX_KEPT = shift(@ARGV);
       #--------------------------------------------------------------------
       } elsif ($arg eq '-k' or $arg eq '--kind') { # indicate base rules to use
-           &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/^\w+$/;
-           $KIND = shift(@ARGV);
+	 &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/^\w+$/;
+	 $KIND = shift(@ARGV);
       #--------------------------------------------------------------------
       } elsif ($arg eq '-l' or $arg eq '--logfile' or $arg eq '-o') { # log file
-           &Warn("Missing logfile name in $arg") unless $ARGV[0] =~ m/\S+/;
-           &Create_Rpt(shift(@ARGV));
+	 &Warn("Missing logfile name in $arg") unless $ARGV[0] =~ m/\S+/;
+	 &Create_Rpt(shift(@ARGV));
       #--------------------------------------------------------------------
       } elsif ($arg eq '-man') { # output manpage file
-           &Manpage($0,"$tool.1");
-           exit 0 unless @ARGV;
+	 &Manpage($0,"$tool.1");
+	 exit 0 unless @ARGV;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-n') { # suppress output context
-           $message_only = 1;
+	 $message_only = 1;
       #--------------------------------------------------------------------
       } elsif (($arg eq '-p' or $arg eq '--path') and $ARGV[0]) { # search path
-           $arg = shift(@ARGV);
-           if ($arg =~ s/^[\^]//) {
-               unshift(@RULE_PATH, split(':',$arg));
-           } elsif ($arg =~ s/^[\$]//) {
-               push(@RULE_PATH, split(':',$arg));
-           } else {
-               @RULE_PATH = split(':',$arg);
-           }#endif
+	 $arg = shift(@ARGV);
+	 #$arg =~ s/^["']|["']$//; # Remove surounding quotes double or single.
+	 if ($arg =~ s/^\^//) {
+	    unshift(@RULE_PATH, split(':',$arg));
+	 } elsif ($arg =~ s/^\$//) {
+	    push(@RULE_PATH, split(':',$arg));
+	 } else {
+	    @RULE_PATH = split(':',$arg);
+	 }#endif
       #--------------------------------------------------------------------
       } elsif ($arg eq '-q') { # quiet
-           $verbosity = 'quiet';
+	 $verbosity = 'quiet';
       #--------------------------------------------------------------------
       } elsif ($arg eq '-INSTALL') { # simple installation
-           print STDOUT "Installing...\n" unless &Quiet;
-           $found = 0;
-           @DATA = <main::DATA> unless @DATA;
-           for (@DATA) {
-               if (/^__INSTALL__$/) {
-                   $found = 1;
-               } elsif (/^__EOF__$/) {
-                   $found = 0;
-               } elsif ($found and /^__PERL__\s+/) {
-                   chomp($cmd = $');
-                   print STDOUT "INSTALL-PERL> ",$cmd;
-                   eval($cmd);
-               } elsif ($found and /^__EXEC__\s+/) {
-                   $cmd = $';
-                   $cmd = eval('"'.$cmd.'"');
-                   print STDOUT "INSTALL> ",$cmd;
-                   $exit = system($cmd)/256;
-                   print "Exitcode $exit\n" if $exit;
-                   $found = 2;
-               } elsif ($found) {
-                   chomp;
-                   print eval('"'.$_.'\n"');
-               }#endif
-           }#endwhile
-           exit 0;
+	 print STDOUT "Installing...\n" unless &Quiet;
+	 $found = 0;
+	 @DATA = <main::DATA> unless @DATA;
+	 for (@DATA) {
+	    if (/^__INSTALL__$/) {
+	       $found = 1;
+	    } elsif (/^__EOF__$/) {
+	       $found = 0;
+	    } elsif ($found and /^__PERL__\s+/) {
+	       chomp($cmd = $');
+	       print STDOUT "INSTALL-PERL> ",$cmd;
+	       eval($cmd);
+	    } elsif ($found and /^__EXEC__\s+/) {
+	       $cmd = $';
+	       $cmd = eval('"'.$cmd.'"');
+	       print STDOUT "INSTALL> ",$cmd;
+	       $exit = system($cmd)/256;
+	       print "Exitcode $exit\n" if $exit;
+	       $found = 2;
+	    } elsif ($found) {
+	       chomp;
+	       print eval('"'.$_.'\n"');
+	    }#endif
+	 }#endwhile
+	 exit 0;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-XL') { # list files to extract
-           @DATA = <main::DATA> unless @DATA;
-           print STDOUT "Extractable files (-XT):\n";
-           for (@DATA) {
-               if (! m/^__EOF__$/ and m/^__([^_]\S*)__$/) {
-                   $title = $1;
-                   next if $title eq 'MANPAGE' or $title eq 'INSTALL';
-                   $title = lc($title) if index($title,'.') > 0;
-                   print STDOUT "  ",$title,"\n" unless &Quiet;
-               }#endif
-           }#endfor
-           exit 0;
+	 @DATA = <main::DATA> unless @DATA;
+	 print STDOUT "Extractable files (-XT):\n";
+	 for (@DATA) {
+	    if (! m/^__EOF__$/ and m/^__([^_]\S*)__$/) {
+	       $title = $1;
+	       next if $title eq 'MANPAGE' or $title eq 'INSTALL';
+	       $title = lc($title) if index($title,'.') > 0;
+	       print STDOUT "  ",$title,"\n" unless &Quiet;
+	    }#endif
+	 }#endfor
+	 exit 0;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-XT') { # extract various tests UNDOCUMENTED
-           &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/\S+/;
-           $case = shift(@ARGV);
-           $CASE = uc($case);
-           $title = "Writing $case\n";
-           $found = 0;
-           @DATA = <main::DATA> unless @DATA;
-           for (@DATA) {
-               if (/^__${CASE}__$/) {
-                   $found = 1;
-                   print STDOUT $title unless &Quiet;
-                   open(OUT,">$case") or die "Unable to write $case!?\n";
-                   OUT->autoflush(1);
-               } elsif (/^__EOF__$/) {
-                   $found = 0;
-               } elsif ($found and /^__PERL__\s+/) {
-                   chomp($cmd = $');
-                   eval($cmd);
-               } elsif ($found and /^__EXEC__\s+/) {
-                   $cmd = $';
-                   $cmd = eval('"'.$cmd.'"');
-                   print STDOUT "$TOOL> ",$cmd if &Verbose;
-                   $exit = system($cmd)/256;
-                   print "Exitcode $exit\n" if $exit;
-               } elsif ($found) {
-                   print OUT $_;
-                   $found = 2;
-               }#endif
-           }#endwhile
-           close(OUT);
-           exit 0 unless $ARGV[0] eq '-XT';
+	 &Warn("Missing argument to $arg") unless $ARGV[0] =~ m/\S+/;
+	 $case = shift(@ARGV);
+	 $CASE = uc($case);
+	 $title = "Writing $case\n";
+	 $found = 0;
+	 @DATA = <main::DATA> unless @DATA;
+	 for (@DATA) {
+	    if (/^__${CASE}__$/) {
+	       $found = 1;
+	       print STDOUT $title unless &Quiet;
+	       open(OUT,">$case") or die "Unable to write $case!?\n";
+	       OUT->autoflush(1);
+	    } elsif (/^__EOF__$/) {
+	       $found = 0;
+	    } elsif ($found and /^__PERL__\s+/) {
+	       chomp($cmd = $');
+	       eval($cmd);
+	    } elsif ($found and /^__EXEC__\s+/) {
+	       $cmd = $';
+	       $cmd = eval('"'.$cmd.'"');
+	       print STDOUT "$TOOL> ",$cmd if &Verbose;
+	       $exit = system($cmd)/256;
+	       print "Exitcode $exit\n" if $exit;
+	    } elsif ($found) {
+	       print OUT $_;
+	       $found = 2;
+	    }#endif
+	 }#endwhile
+	 close(OUT);
+	 exit 0 unless $ARGV[0] eq '-XT';
       #--------------------------------------------------------------------
       } elsif ($arg eq '-html') { # run logfile through vim's 2html
-           $OPT_html = 1;
+	 $OPT_html = 1;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-j') { # provide rule number in ouput
-           $OPT_justify = 1;
+	 $OPT_justify = 1;
       #--------------------------------------------------------------------
       } elsif (index($arg,'-tee')==0) { # tee
-           $tee = 1;
+	 $tee = 1;
       #--------------------------------------------------------------------
       } elsif ($arg =~ m/^-D(\dx?\d*)/) { # debugging (not documented)
-           $DEBUG = $1;
-           $DEBUG = hex($DEBUG) if $DEBUG =~ m/x/;
-           &Debug($DEBUG,sprintf("debuging level 0x%x",$DEBUG));
-           &Printf2Both($banner) unless defined $banner_done;
-           $banner_done = 1;
+	 $DEBUG = $1;
+	 $DEBUG = hex($DEBUG) if $DEBUG =~ m/x/;
+	 &Debug($DEBUG,sprintf("debuging level 0x%x",$DEBUG));
+	 &Printf2Both($banner) unless defined $banner_done;
+	 $banner_done = 1;
       #--------------------------------------------------------------------
       } elsif (index($arg,'-v')==0) { # verbose
-           $verbosity = 'very';
-           $DEBUG = $1 if $arg =~ m:^-v(\d+)$:; # debugging (not documented)
-           $DEBUG = hex($DEBUG) if $DBUG =~ m/x/;
-           &Printf2Both($banner) unless defined $banner_done;
-           $banner_done = 1;
+	 $verbosity = 'very';
+	 $DEBUG = $1 if $arg =~ m:^-v(\d+)$:; # debugging (not documented)
+	 $DEBUG = hex($DEBUG) if $DBUG =~ m/x/;
+	 &Printf2Both($banner) unless defined $banner_done;
+	 $banner_done = 1;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-V' or $arg eq '--version') { # display tool version
-           printf("%s %s\n",$tool,$revs);
-           exit 0 unless @ARGV;
-           #&Printf2Log("%s %s\n",$tool,$revs);
+	 printf("%s %s\n",$tool,$revs);
+	 exit 0 unless @ARGV;
+	 #&Printf2Log("%s %s\n",$tool,$revs);
       #--------------------------------------------------------------------
       } elsif ($arg =~ m/^-w\d*$/) { # wrap
-           $WRAP = 78;
-           $WRAP = $& if $arg =~ m/\d+/;
+	 $WRAP = 78;
+	 $WRAP = $& if $arg =~ m/\d+/;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-x') { # explicit rule
-           &Warn("Missing argument to $arg") unless $ARGV[0];
-           &Read_Rules;
-           $RULE_FILE = '';
-           $RULE_LNO = '';
-           &Parse_Rule(shift(@ARGV));
+	 &Warn("Missing argument to $arg") unless $ARGV[0];
+	 &Read_Rules;
+	 $RULE_FILE = '';
+	 $RULE_LNO = '';
+	 &Parse_Rule(shift(@ARGV));
       #--------------------------------------------------------------------
       } elsif ($arg eq '-banner' or $arg eq '--banner') { # report PASSED/FAILED
-           $OPT_banner = 1;
+	 $OPT_banner = 1;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-passfail' or $arg eq '--passfail') { # report PASSED/FAILED
-           $OPT_passfail = 1;
+	 $OPT_passfail = 1;
       #--------------------------------------------------------------------
       } elsif ($arg eq '-X' or $arg eq '--exact') { # exact matching - no allowances
-           $OPT_exact = 1;
+	 $OPT_exact = 1;
       #--------------------------------------------------------------------
       } elsif ($arg ne '' and index($arg,'-') != 0) { # input file
-           &Warn("File '$arg' not readable") unless -r $arg;
-           push(@INPUT_FILES,$arg);
+	 &Warn("File '$arg' not readable") unless -r $arg;
+	 push(@INPUT_FILES,$arg);
       #--------------------------------------------------------------------
       } else { # oops...
-           &Warn("Unknown command line option");
+	 &Warn("Unknown command line option");
       }#endif
    }#endwhile
    &Printf2Both($banner) unless defined $banner_done;
@@ -2712,7 +2767,7 @@ sub Initialize {
    $MAX_KEPT = 1;
    $WS = "\t\n ";
    @RULE_PATH = (
-      '$0/../etc',
+      "$0/../etc",
       '.',
    );
    $SIG{'INT'} = \&Handler;
@@ -2958,7 +3013,6 @@ sub Enable_Rule { # --- ? ? ? ? Bug ? ? ? ? ---
    #$flag = ($flag) ? $TRUE : $FALSE;
    $found=0;
    foreach $tag (keys %TAG) {
-      &Debug(0x0002,"SKB: testing tag='$tag'.");
       if ($tag =~ m{^$dst$}) {
          $found++;
          foreach $rule_index (@{$TAG{$tag}}) {
@@ -2968,7 +3022,6 @@ sub Enable_Rule { # --- ? ? ? ? Bug ? ? ? ? ---
          }#endforeach
       }#endif
    }#endforeach
-   &Debug(0x0002,"SKB: 100: ENABLE rule flag='$flag', dst='$dst', found='$found'.");
    if ($found == 0) {
       &Warn("No matching tags for {$dst}.");
    } else {
@@ -3004,11 +3057,9 @@ sub Add_Rule {
       $evl, # '', expr
    )=@_;
    my (@THIS_RULE) = &New_Rule($ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl);
-   Debug(0x0001,"SKB: 1: ADDING rule '$typ'");
    my $RULE_REF = [ @THIS_RULE ];
    &Display_Rule(1, $RULE_REF); # display if needed for DEBUG
    push(@RULE_LOL,  $RULE_REF); # for sequential access to rules
-   &Debug(0x0002, "SKB: About to push tag='$tag' for rule '$#RULE_LOL'");
    push(@{$TAG{$tag}}, $#RULE_LOL); # for easy access to tags
    push(@{$TYP{$typ}}, $#RULE_LOL); # for easy access to rules
 }#endsub Add_Rule
@@ -3023,7 +3074,6 @@ sub Parse_Pattern {
    if ($CURR_TXT =~ s/^.//) {
       my $delim = $&;
       $delim = $rh{$delim} if defined $rh{$delim};
-      &Debug(0x0002, "SKB: Parse_Pattern: delim='$delim'");
       my $delim_index = -1;
       my $local_context = 1;
       while (($delim_index = index($CURR_TXT,$delim)) < 0) {
@@ -3036,7 +3086,6 @@ sub Parse_Pattern {
       $required_context = $local_context if $local_context > $required_context;
       $mul = $local_context if $local_context > 1;
       $pat .= substr($CURR_TXT,0,$delim_index);
-      &Debug(0x0002, "SKB: Parse_Pattern: pat='$pat'.");
       while ($pat =~ s/[\$]([A-Za-z]\w*)/\001/ or $pat =~ s/[\$]{([A-Za-z]\w*)}/\001/) {
          my $macro = $main::VAR{$1};
          $pat =~ s/\001/$macro/;
@@ -3157,13 +3206,11 @@ sub Parse_Rule {
       $evl, # '', expr
    ) = (('') x scalar(@FLD));
    my ($VAR, $VAL);
-   &Debug(0x0002,"SKB: 8: PARSING RULE: '%s'",$CURR_TXT);
    return if $CURR_TXT =~ m:^\s*((#|(//)|(--)).*)?$:; # skip comments
    $CURR_TXT =~ s/^\s+//; # remove leading whitespace
    my $ORIG_TXT = $CURR_TXT; # for error messages
    # Pull off context tags if any
    $tag = ($CURR_TXT =~ s/^([_a-zA-Z]\w*):\s*//) ? $1 : $RULE_FILE.'//'.$RULE_LNO;
-   &Debug(0x0002,"SKB: tag '$tag'");
    $kw = '';
    if ($CURR_TXT =~ m/^[\$](\w+)\s*=s*/) {
       # Grab variable assignments
@@ -3180,18 +3227,15 @@ sub Parse_Rule {
       &Warn("Unrecognized command!\n?'$ORIG_TXT'");
       return 0;
    }#endif
-   &Debug(0x0002, "SKB: kw='$kw', CUR_TXT='$CURR_TXT'.");
    if (grep($kw eq $_, @ENA) and $CURR_TXT =~ s/^\s+(\S+)\s+(\w+)\s+/ $2 /) {
       # Grab enable/disable pattern with conditional
       ($ds0,$cnd) = ($1,&Alias($2));
    } elsif (grep($kw eq $_, @INC) and ($CURR_TXT =~ s/^\s+"(\S+)"\s+(\w+)\s+/ $2 / or $CURR_TXT =~ s/^\s+(\S+)\s+(\w+)\s+/ $2 /)) {
       # Grab use/require/include file with conditional
       ($inc,$cnd) = ($1,&Alias($2));
-      &Debug(0x0002, "SKB: Matched an include rule with a condition inc='$inc', cnd='$cnd'.");
    } elsif ($CURR_TXT =~ m/^\s+(\w+)\s+/) {
       # Grab conditional if bare
       $cnd = &Alias($1);
-      &Debug(0x0002, "SKB: Matched a nonparsed rule with cnd='$cnd'.");
    }#endif
    if (defined $disallow{$kw}) {
       &Warn("Disallowed command: '$kw'");
@@ -3214,15 +3258,14 @@ sub Parse_Rule {
       }#endif
       &Debug(0x0002,"PARSING '$cmp' comparison with '$cnd' condition.");
       if ($cmp eq 'expr') {
-	      ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
+              ($and,$CURR_TXT) = &Parse_Expr($CURR_TXT);
       } elsif ($cnd ne 'post') {
-	      ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
+              ($pat,$mul,$CURR_TXT) = &Parse_Pattern($CURR_TXT);
       }#endif
       &Debug(0x0002,"PARSING action and='$and',pat='$pat'.");
       # Handle actions
       while ($CURR_TXT =~ s/^\s*(\w+)\s+// or $CURR_TXT =~ s/^\s*(#).*//) {
          my ($action) = &Alias($1);
-         &Debug(0x0002,"SKB: PARSING '$action' action");
          next if $action eq '#'; # skip trailing comments
          &Debug(0x0002,"PARSING '$action' action");
          if ($action eq 'msg') {
@@ -3293,7 +3336,6 @@ sub Parse_Rule {
                return 0;
             }#endif
          } elsif ($action eq 'include' or $action eq 'require' or $action eq 'use') {
-            &Debug(0x0002, "SKB: CURR_TEXT='$CURR_TXT'");
             if ($CURR_TXT =~ s/^(\S+)\s*//) {
                my $inc = $1;
             } else {
@@ -3308,9 +3350,7 @@ sub Parse_Rule {
          }#endif
       }#endwhile
       $min = 1 if ($cnd eq "unless" and $min eq ''); # Need to find at least one if min not specified.
-      &Debug(0x0002, "SKB: $ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl");
       if ($CURR_TXT =~ m/^\s*(#.*)?$/) {
-         &Debug(0x0002, "SKB: Adding rule!");
          &Add_Rule($ena,$tag,$typ,$cnd,$cmp,$pat,$mul,$ctx,$cty,$inc,$act,$ds0,$dst,$msg,$cnt,$min,$max,$sho,$frc,$and,$alw,$pre,$evl);
       } else {
          &Warn("Illegal syntax for '$kw' rule.\n?'$ORIG_TXT'");
@@ -3330,7 +3370,6 @@ sub Parse_Rule {
    #------------------------------------------------------------------------
    } elsif (grep($kw eq $_, @INC)) {
    #} elsif ($kw eq 'include' or $kw eq 'require' or $kw eq 'use') {
-      &Debug(0x0002,"SKB: PARSING file inclusion command");
       if ($CURR_TXT =~ s/^\s+"(\S+)"\s*$// or $CURR_TXT =~ s/^\s+(\S+)\s*$//) {
          my $file = $1;
          &Debug(0x0002,"PARSING file inclusion command, file='$file'.");
@@ -3567,7 +3606,9 @@ sub Include {
 sub Read_Rules {
    return if defined $rules_read;
    $start = time();
+   &Debug(0x0001,"SKB: Looking for '$KIND$EXTN' or '$KIND' RULE_PATH='$RULE_PATH'.");
    foreach $dir (@RULE_PATH) {
+      &Debug(0x0001,"SKB: dir='$dir'.");
       substr($dir,0,2) = $tooldir.'/..' if index($dir,'$0/') == 0;
       $path = $dir.'/'.$KIND.$EXTN;
       $path = $dir.'/'.$KIND unless -r $path;
@@ -3616,7 +3657,7 @@ __EXEC__ chmod 755 test.sh
 #--------------------------------------------------------------------------
 # Regression test script
 # Run this script in the logscan directory.
-# This script will makke a directory "regression_test" amd run some tests
+# This script will make a directory "regression_test" and run some tests
 # Examine the file "test_output.txt"
 #--------------------------------------------------------------------------
 # Move old regression test directory if exists
@@ -3963,9 +4004,9 @@ __EOF__
 
 __LOGSCAN.VIM__
 " Vim syntax file
-" Language:	Logscan rule file
-" Maintainer:	David C Black <dcblack@hldwizard.com>
-" Last Change:	2001 Sep 3
+" Language:     Logscan rule file
+" Maintainer:   David C Black <dcblack@hldwizard.com>
+" Last Change:  2001 Sep 3
 "
 " Using vim 6.0 simply drop this file into $HOME/.vim/syntax/ directory
 " Add :autocmd Syntax logscan source $HOME/.vim/syntax/logscan.vim to
@@ -3994,20 +4035,20 @@ syn region  logscanString start=+{+  end=+}+
 " with an empty line or other line that can't be in the header.
 " All lines of the header are highlighted
 " For "From " matching case is required, not for the rest.
-syn region	logscanHeader	start="^RULE_PATH " skip="^[ \t]" end="^[-A-Za-z0-9/]*[^-A-Za-z0-9/:]"me=s-1 end="^[^:]*$"me=s-1 end="^---*" contains=logscanHeaderKey
+syn region      logscanHeader   start="^RULE_PATH " skip="^[ \t]" end="^[-A-Za-z0-9/]*[^-A-Za-z0-9/:]"me=s-1 end="^[^:]*$"me=s-1 end="^---*" contains=logscanHeaderKey
 
 syn case ignore
 
-syn region	logscanHeader	start="^\(INFO:\|ERROR:\|WARNING:\|FATAL:\|SEVERE:\|NOTE:\|EXPECTED:\)" skip="^[ \t]" end="^[-a-z0-9/]*[^-a-z0-9/:]"me=s-1 end="^[^:]*$"me=s-1 end="^---*" contains=logscanHeaderKey
+syn region      logscanHeader   start="^\(INFO:\|ERROR:\|WARNING:\|FATAL:\|SEVERE:\|NOTE:\|EXPECTED:\)" skip="^[ \t]" end="^[-a-z0-9/]*[^-a-z0-9/:]"me=s-1 end="^[^:]*$"me=s-1 end="^---*" contains=logscanHeaderKey
 
-syn match	logscanEmail	contained "[_=a-z\.+A-Z0-9-]\+@[a-zA-Z0-9\./\-]\+"
-syn match	logscanEmail	contained "<.\{-}>"
+syn match       logscanEmail    contained "[_=a-z\.+A-Z0-9-]\+@[a-zA-Z0-9\./\-]\+"
+syn match       logscanEmail    contained "<.\{-}>"
 
 " even and odd quoted lines
 " removed ':', it caused too many bogus highlighting
 " order is imporant here!
-syn match	logscanQuoted1	"^[\t ]*#.*"
-syn match	logscanLabel   "^[\t ]*\<[A-Z][A-Z0-9_]\+\>:"
+syn match       logscanQuoted1  "^[\t ]*#.*"
+syn match       logscanLabel   "^[\t ]*\<[A-Z][A-Z0-9_]\+\>:"
 
 " Need to sync on the header.  Assume we can do that within a hundred lines
 syn sync lines=10
@@ -4015,9 +4056,9 @@ syn sync lines=10
 if !exists("did_logscan_syntax_inits")
   let did_logscan_syntax_inits = 1
   " The default methods for highlighting.  Can be overridden later
-  hi link logscanHeader		Statement
-  hi link logscanQuoted1	Comment
-  hi link logscanEmail		Special
+  hi link logscanHeader         Statement
+  hi link logscanQuoted1        Comment
+  hi link logscanEmail          Special
   hi link logscanKeywords       Statement
   hi link logscanIdentifier     Identifier
   hi link logscanLabel          Type
@@ -4030,9 +4071,9 @@ __EOF__
 
 __LOG.VIM__
 " Vim syntax file
-" Language:	Logscan report file
-" Maintainer:	David C Black <dcblack@hldwizard.com>
-" Last Change:	2001 Sep 3
+" Language:     Logscan report file
+" Maintainer:   David C Black <dcblack@hldwizard.com>
+" Last Change:  2001 Sep 3
 
 " Remove any old syntax stuff hanging around
 syn clear
@@ -4157,7 +4198,7 @@ VERSION 2.51
 - Fixed behavior of "unless" command
 - Made include, require and use commands to allow for quoted or unquoted
    file names.
-- Signficantly modified the test.sh script
+- Significantly modified the test.sh script
    * The script is now designed to create a test directory "regression_tests"
    * The script will capture all STDOUT and STDERR into "test_output.txt"
    * If the directory "regression_tests" already exist, it will be moved
@@ -4165,7 +4206,7 @@ VERSION 2.51
 - Updated some tests that were not working correctly.
 
 VERSION 2.50
-- Fixed Depricated Code
+- Fixed Deprecated Code
 
 VERSION 2.48
 - Force output to flush properly
@@ -4182,7 +4223,7 @@ VERSION 2.44
 
 - Fixed bug with counting report
 - Added feature to report total counts
-- Clarified documentaton of min/max/unless
+- Clarified documentation of min/max/unless
 
 VERSION 2.42
 
@@ -4304,15 +4345,15 @@ and LOGSCAN should be able to work on a PC or Macintosh running PERL
 with very little modification.
 
 Installation of LOGSCAN at its simplest involves placing the tool
-in your exectuable searchpath, making certain the permissions
+in your executable searchpath, making certain the permissions
 allow execution by users, and ensuring that PERL 5.0 or later is
 installed. Common locations for the executable include /usr/local/bin,
 /usr/contrib/bin, /tools/bin or possibly $HOME/bin. No special
-priviledges are required by LOGSCAN.
+privileges are required by LOGSCAN.
 
 A special -INSTALL switch (not documented elsewhere) may be used
 to make LOGSCAN executable, create a symbolic link, and ensure you
-have the correct readme files, and manpage available.
+have the correct README files, and manpage available.
 
    logscan -INSTALL
 
@@ -4354,3 +4395,10 @@ Enjoy!
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 __EOF__
 END OF LOGSCAN
+
+# The following tells emacs (and some other editors) to use 3 character indentation.
+
+# Local variables:
+# perl-indent-level: 3
+# cperl-indent-level: 3
+# End:

@@ -4204,6 +4204,10 @@ VERSION 2.51
    * If the directory "regression_tests" already exist, it will be moved
      using an "_ddd" suffix.  (Same with "test_output.txt")
 - Updated some tests that were not working correctly.
+- Made sub Keep a little simpler.
+- Fixed a lot of spelling errors in comments and documentation.
+- Added documentation for -p --path options.
+- Corrected some inconstant indentations.
 
 VERSION 2.50
 - Fixed Deprecated Code
